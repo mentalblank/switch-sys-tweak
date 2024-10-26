@@ -1,0 +1,83 @@
+name: Build sys-tweak
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [push]
+    repositories:
+      p-sam/switch-sys-tweak
+
+permissions:
+  contents: write
+
+jobs:
+  container-build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64
+    steps:
+      - name: env
+        run: |
+          cat /proc/cpuinfo
+          free -m
+
+      - name: checkout - project
+        uses: actions/checkout@v2
+        with:
+          repository: p-sam/switch-sys-tweak
+          ref: develop
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global --add safe.directory /__w/sys-tweak-builds/sys-tweak-builds
+
+      - name: deps - libnx
+        run: |
+          git clone https://github.com/switchbrew/libnx.git /tmp/libnx
+          make -C /tmp/libnx install -j4
+
+      - name: deps - ams libs
+        run: |
+          make -C lib/ams/libstratosphere -j4
+
+      - name: build - FEAT_ALL
+        run: |
+          make clean
+          make FEAT_ALL="Y" -j4
+
+      - name: store - FEAT_ALL
+        uses: actions/upload-artifact@v4
+        with:
+          name: sys-tweak.nsp
+          path: out/sys-tweak.nsp
+
+      - name: Get next version code
+        id: next_ver_code
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release list -L 1 | awk -F '\t' '{print $3}')
+          if [ -z "$TAG" ]; then TAG=0; fi
+          echo "NEXT_VER_CODE=$((TAG + 1))" >> $GITHUB_OUTPUT
+
+      - name: Package sys-tweak.nsp in .zip file
+        run: |
+          echo "CURRENT_DATE=$(date +%Y%m%d'(%H%M%S)')" >> $GITHUB_ENV
+          mkdir -p out/atmosphere/contents/00FF747765616BFF/
+          cp out/sys-tweak.nsp out/atmosphere/contents/00FF747765616BFF/exefs.nsp
+          echo '{\n  "name": "sys-tweak",\n  "tid": "00FF747765616BFF",\n  "requires_reboot": true\n}' > out/atmosphere/contents/00FF747765616BFF/toolbox.json
+          mkdir -p out/atmosphere/contents/00FF747765616BFF/flags
+          touch out/atmosphere/contents/00FF747765616BFF/flags/boot2.flag
+          cd out && zip -r sys-tweak.zip atmosphere/
+
+      - name: Create Release and Upload Archive
+        uses: svenstaro/upload-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
+          body: "Automatically generated from latest [p-sam/switch-sys-tweak](https://github.com/p-sam/switch-sys-tweak/) commit"
+          release_name: Build ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }} - ${{ env.CURRENT_DATE }}
+          file: out/sys-tweak.zip
