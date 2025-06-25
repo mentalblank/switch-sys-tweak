@@ -1,0 +1,44 @@
+name: ⚠️ Incorrect Issue – Belongs to Upstream (p-sam/switch-sys-tweak)
+description: This repository only handles packaging. If the problem lies in the source code, report it upstream.
+title: "[WRONG REPO] "
+labels: [invalid, not-our-bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **STOP. READ BEFORE CONTINUING.**
+
+        This repository **does not** maintain the [`sys-tweak`](https://github.com/p-sam/switch-sys-tweak) source code.
+        It only builds and packages sys-tweak using specific build flags (`FEAT_NSAM_CONTROL`, `FEAT_NSRO_CONTROL`) for easy drag-and-drop installation and updates.
+
+        ❌ If your issue is about:
+        - Crashes
+        - Missing features
+        - Bugs in how the program behaves
+        - Requests for code changes
+
+        👉 **You are in the wrong place.** Please open an issue in the source repo instead: [`p-sam/switch-sys-tweak`](https://github.com/p-sam/switch-sys-tweak)
+
+        ✅ You *should* use this issue form if:
+        - Something is missing from the release package
+        - Files are in the wrong place
+        - The ZIP release is broken or incomplete
+        - Something in the setup or instructions is clearly incorrect
+
+        We reserve the right to close irrelevant issues without reply. Thank you for understanding.
+
+  - type: checkboxes
+    attributes:
+      label: Confirm Before Proceeding
+      description: These are required to prevent misdirected issues.
+      options:
+        - label: I understand this is **NOT** the sys-tweak source code repository.
+          required: true
+        - label: This issue is about a problem with the packaging or output (e.g. build failure, missing file, etc).
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What is the issue with this package?
+      description: Only fill this out if your issue relates to this packaging repository specifically. Provide any relevant paths or filenames.
